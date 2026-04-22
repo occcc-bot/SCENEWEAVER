@@ -1,6 +1,19 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "undefined") {
+      throw new Error(
+        "Invalid or missing Gemini API Key. AI Studio expects GEMINI_API_KEY. For external platforms like Cloudflare Pages, please ensure GEMINI_API_KEY or VITE_GEMINI_API_KEY is set in your build environment variables."
+      );
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export interface StoryboardBeat {
   sceneNumber: number;
@@ -11,6 +24,7 @@ export interface StoryboardBeat {
 }
 
 export async function parseScript(script: string): Promise<StoryboardBeat[]> {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
@@ -55,6 +69,7 @@ export async function parseScript(script: string): Promise<StoryboardBeat[]> {
 }
 
 export async function generateBeatImage(visualPrompt: string): Promise<string> {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
